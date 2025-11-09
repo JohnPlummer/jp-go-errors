@@ -146,7 +146,7 @@ type RateLimitError struct {
 func (e *RateLimitError) Error() string {
 	opStr := e.Operation
 	if e.Component != "" {
-		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+		opStr = fmt.Sprintf("%s/%s", e.Component, e.Operation)
 	}
 
 	if e.Err != nil {
@@ -192,7 +192,7 @@ type RetryableError struct {
 func (e *RetryableError) Error() string {
 	opStr := e.Operation
 	if e.Component != "" {
-		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+		opStr = fmt.Sprintf("%s/%s", e.Component, e.Operation)
 	}
 
 	if e.Err != nil {
@@ -237,7 +237,7 @@ type TimeoutError struct {
 func (e *TimeoutError) Error() string {
 	opStr := e.Operation
 	if e.Component != "" {
-		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+		opStr = fmt.Sprintf("%s/%s", e.Component, e.Operation)
 	}
 
 	if e.Err != nil {
@@ -295,17 +295,26 @@ type ValidationError struct {
 }
 
 func (e *ValidationError) Error() string {
-	fieldStr := e.Field
+	baseMsg := ""
 	if e.Component != "" {
-		fieldStr = fmt.Sprintf("%s.%s", e.Component, e.Field)
+		baseMsg = fmt.Sprintf("validation failed in %s for field '%s' (value: %v)",
+			e.Component, e.Field, e.Value)
+	} else {
+		baseMsg = fmt.Sprintf("validation failed for field '%s' (value: %v)",
+			e.Field, e.Value)
+	}
+
+	if e.Message != "" {
+		if e.Err != nil {
+			return fmt.Sprintf("%s: %s: %v", baseMsg, e.Message, e.Err)
+		}
+		return fmt.Sprintf("%s: %s", baseMsg, e.Message)
 	}
 
 	if e.Err != nil {
-		return fmt.Sprintf("validation failed for field '%s' (value: %v): %s: %v",
-			fieldStr, e.Value, e.Message, e.Err)
+		return fmt.Sprintf("%s: %v", baseMsg, e.Err)
 	}
-	return fmt.Sprintf("validation failed for field '%s' (value: %v): %s",
-		fieldStr, e.Value, e.Message)
+	return baseMsg
 }
 
 func (e *ValidationError) Unwrap() error {
@@ -353,7 +362,7 @@ func (e *ProcessingError) Error() string {
 
 	opStr := e.Operation
 	if e.Component != "" {
-		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+		opStr = fmt.Sprintf("%s/%s", e.Component, e.Operation)
 	}
 
 	if e.ItemID != "" {
@@ -424,7 +433,7 @@ func (e *NetworkError) Error() string {
 
 	opStr := e.Operation
 	if e.Component != "" {
-		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+		opStr = fmt.Sprintf("%s/%s", e.Component, e.Operation)
 	}
 
 	if e.Err != nil {
@@ -469,7 +478,7 @@ type CircuitBreakerError struct {
 func (e *CircuitBreakerError) Error() string {
 	opStr := e.Operation
 	if e.Component != "" {
-		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+		opStr = fmt.Sprintf("%s/%s", e.Component, e.Operation)
 	}
 
 	if e.Err != nil {
