@@ -30,6 +30,8 @@ func WithCause(cause error) Option {
 			e.Err = cause
 		case *RateLimitError:
 			e.Err = cause
+		case *RetryableError:
+			e.Err = cause
 		case *ProcessingError:
 			e.Err = cause
 		case *NetworkError:
@@ -98,6 +100,8 @@ func WithOperation(operation string) Option {
 			e.Operation = operation
 		case *RateLimitError:
 			e.Operation = operation
+		case *RetryableError:
+			e.Operation = operation
 		case *ProcessingError:
 			e.Operation = operation
 		case *NetworkError:
@@ -125,6 +129,8 @@ func WithMessage(message string) Option {
 		case *TimeoutError:
 			e.Message = message
 		case *RateLimitError:
+			e.Message = message
+		case *RetryableError:
 			e.Message = message
 		case *ProcessingError:
 			e.Message = message
@@ -215,6 +221,8 @@ func WithComponent(component string) Option {
 		case *TimeoutError:
 			e.Component = component
 		case *RateLimitError:
+			e.Component = component
+		case *RetryableError:
 			e.Component = component
 		case *ProcessingError:
 			e.Component = component

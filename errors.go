@@ -178,6 +178,52 @@ func NewRateLimitError(message, operation string, retryAfter time.Duration, opts
 	return err
 }
 
+// RetryableError represents a generic retryable error with retry-after duration.
+// More general than RateLimitError - can be used for any temporary failure.
+// Automatically includes stack trace from creation point.
+type RetryableError struct {
+	Message    string
+	Operation  string
+	Component  string
+	RetryAfter time.Duration
+	Err        error
+}
+
+func (e *RetryableError) Error() string {
+	opStr := e.Operation
+	if e.Component != "" {
+		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+	}
+
+	if e.Err != nil {
+		return fmt.Sprintf("retryable error in %s (retry after %v): %s: %v",
+			opStr, e.RetryAfter, e.Message, e.Err)
+	}
+	return fmt.Sprintf("retryable error in %s (retry after %v): %s",
+		opStr, e.RetryAfter, e.Message)
+}
+
+func (e *RetryableError) Unwrap() error {
+	return e.Err
+}
+
+func (e *RetryableError) IsRetryable() bool {
+	return true
+}
+
+// NewRetryableError creates a RetryableError with automatic stack trace.
+func NewRetryableError(message, operation string, retryAfter time.Duration, opts ...Option) error {
+	err := &RetryableError{
+		Message:    message,
+		Operation:  operation,
+		RetryAfter: retryAfter,
+	}
+	for _, opt := range opts {
+		opt(err)
+	}
+	return err
+}
+
 // TimeoutError represents an operation that exceeded its deadline.
 // Automatically includes stack trace from creation point.
 type TimeoutError struct {
