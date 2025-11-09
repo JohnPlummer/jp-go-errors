@@ -198,7 +198,7 @@ func WithState(state string) Option {
 
 // WithComponent sets the component name for an error.
 // Component identifies where the error occurred (e.g., "enricher", "curator", "llm_matcher").
-// Only applies to ProcessingError types, ignored for others.
+// Applies to all error types that have a Component field.
 //
 // Example:
 //
@@ -207,7 +207,20 @@ func WithState(state string) Option {
 //	    WithItemID(activity.ID))
 func WithComponent(component string) Option {
 	return func(err any) {
-		if e, ok := err.(*ProcessingError); ok {
+		switch e := err.(type) {
+		case *HTTPError:
+			e.Component = component
+		case *ValidationError:
+			e.Component = component
+		case *TimeoutError:
+			e.Component = component
+		case *RateLimitError:
+			e.Component = component
+		case *ProcessingError:
+			e.Component = component
+		case *NetworkError:
+			e.Component = component
+		case *CircuitBreakerError:
 			e.Component = component
 		}
 	}

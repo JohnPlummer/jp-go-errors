@@ -81,14 +81,20 @@ var (
 type HTTPError struct {
 	StatusCode int
 	Message    string
+	Component  string
 	Err        error
 }
 
 func (e *HTTPError) Error() string {
-	if e.Err != nil {
-		return fmt.Sprintf("HTTP %d: %s: %v", e.StatusCode, e.Message, e.Err)
+	msgStr := e.Message
+	if e.Component != "" {
+		msgStr = fmt.Sprintf("%s: %s", e.Component, e.Message)
 	}
-	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, e.Message)
+
+	if e.Err != nil {
+		return fmt.Sprintf("HTTP %d: %s: %v", e.StatusCode, msgStr, e.Err)
+	}
+	return fmt.Sprintf("HTTP %d: %s", e.StatusCode, msgStr)
 }
 
 func (e *HTTPError) Unwrap() error {
@@ -132,17 +138,23 @@ func GetHTTPStatusCode(err error) int {
 type RateLimitError struct {
 	Message    string
 	Operation  string
+	Component  string
 	RetryAfter time.Duration
 	Err        error
 }
 
 func (e *RateLimitError) Error() string {
+	opStr := e.Operation
+	if e.Component != "" {
+		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+	}
+
 	if e.Err != nil {
 		return fmt.Sprintf("rate limited in %s (retry after %v): %s: %v",
-			e.Operation, e.RetryAfter, e.Message, e.Err)
+			opStr, e.RetryAfter, e.Message, e.Err)
 	}
 	return fmt.Sprintf("rate limited in %s (retry after %v): %s",
-		e.Operation, e.RetryAfter, e.Message)
+		opStr, e.RetryAfter, e.Message)
 }
 
 func (e *RateLimitError) Unwrap() error {
@@ -171,17 +183,23 @@ func NewRateLimitError(message, operation string, retryAfter time.Duration, opts
 type TimeoutError struct {
 	Message   string
 	Operation string
+	Component string
 	Duration  time.Duration
 	Err       error
 }
 
 func (e *TimeoutError) Error() string {
+	opStr := e.Operation
+	if e.Component != "" {
+		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+	}
+
 	if e.Err != nil {
 		return fmt.Sprintf("timeout in %s after %v: %s: %v",
-			e.Operation, e.Duration, e.Message, e.Err)
+			opStr, e.Duration, e.Message, e.Err)
 	}
 	return fmt.Sprintf("timeout in %s after %v: %s",
-		e.Operation, e.Duration, e.Message)
+		opStr, e.Duration, e.Message)
 }
 
 func (e *TimeoutError) Unwrap() error {
@@ -223,19 +241,25 @@ func IsTimeout(err error) bool {
 // ValidationError represents a data validation failure.
 // Automatically includes stack trace from creation point.
 type ValidationError struct {
-	Message string
-	Field   string
-	Value   any
-	Err     error
+	Message   string
+	Field     string
+	Component string
+	Value     any
+	Err       error
 }
 
 func (e *ValidationError) Error() string {
+	fieldStr := e.Field
+	if e.Component != "" {
+		fieldStr = fmt.Sprintf("%s.%s", e.Component, e.Field)
+	}
+
 	if e.Err != nil {
 		return fmt.Sprintf("validation failed for field '%s' (value: %v): %s: %v",
-			e.Field, e.Value, e.Message, e.Err)
+			fieldStr, e.Value, e.Message, e.Err)
 	}
 	return fmt.Sprintf("validation failed for field '%s' (value: %v): %s",
-		e.Field, e.Value, e.Message)
+		fieldStr, e.Value, e.Message)
 }
 
 func (e *ValidationError) Unwrap() error {
@@ -341,6 +365,7 @@ func NewRetryableProcessingError(message, operation string, opts ...Option) erro
 type NetworkError struct {
 	Message     string
 	Operation   string
+	Component   string
 	IsTransient bool
 	Err         error
 }
@@ -351,12 +376,17 @@ func (e *NetworkError) Error() string {
 		transientStr = "transient"
 	}
 
+	opStr := e.Operation
+	if e.Component != "" {
+		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+	}
+
 	if e.Err != nil {
 		return fmt.Sprintf("network error in %s (%s): %s: %v",
-			e.Operation, transientStr, e.Message, e.Err)
+			opStr, transientStr, e.Message, e.Err)
 	}
 	return fmt.Sprintf("network error in %s (%s): %s",
-		e.Operation, transientStr, e.Message)
+		opStr, transientStr, e.Message)
 }
 
 func (e *NetworkError) Unwrap() error {
@@ -385,17 +415,23 @@ func NewNetworkError(message, operation string, opts ...Option) error {
 type CircuitBreakerError struct {
 	Message   string
 	Operation string
+	Component string
 	State     string
 	Err       error
 }
 
 func (e *CircuitBreakerError) Error() string {
+	opStr := e.Operation
+	if e.Component != "" {
+		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+	}
+
 	if e.Err != nil {
 		return fmt.Sprintf("circuit breaker %s for %s: %s: %v",
-			e.State, e.Operation, e.Message, e.Err)
+			e.State, opStr, e.Message, e.Err)
 	}
 	return fmt.Sprintf("circuit breaker %s for %s: %s",
-		e.State, e.Operation, e.Message)
+		e.State, opStr, e.Message)
 }
 
 func (e *CircuitBreakerError) Unwrap() error {
