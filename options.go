@@ -195,3 +195,20 @@ func WithState(state string) Option {
 		}
 	}
 }
+
+// WithComponent sets the component name for an error.
+// Component identifies where the error occurred (e.g., "enricher", "curator", "llm_matcher").
+// Only applies to ProcessingError types, ignored for others.
+//
+// Example:
+//
+//	err := NewProcessingError("Failed to enrich activity", "EnrichActivity",
+//	    WithComponent("enricher"),
+//	    WithItemID(activity.ID))
+func WithComponent(component string) Option {
+	return func(err any) {
+		if e, ok := err.(*ProcessingError); ok {
+			e.Component = component
+		}
+	}
+}

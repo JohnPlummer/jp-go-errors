@@ -270,6 +270,7 @@ type ProcessingError struct {
 	Message   string
 	Operation string
 	ItemID    string
+	Component string
 	Retryable bool
 	Err       error
 }
@@ -280,21 +281,22 @@ func (e *ProcessingError) Error() string {
 		retryStr = "retryable"
 	}
 
+	opStr := e.Operation
+	if e.Component != "" {
+		opStr = fmt.Sprintf("%s.%s", e.Component, e.Operation)
+	}
+
 	if e.ItemID != "" {
 		if e.Err != nil {
-			return fmt.Sprintf("processing error in %s for item %s (%s): %s: %v",
-				e.Operation, e.ItemID, retryStr, e.Message, e.Err)
+			return fmt.Sprintf("%s: %s failed for item %s (%s): %v", e.Message, opStr, e.ItemID, retryStr, e.Err)
 		}
-		return fmt.Sprintf("processing error in %s for item %s (%s): %s",
-			e.Operation, e.ItemID, retryStr, e.Message)
+		return fmt.Sprintf("%s: %s failed for item %s (%s)", e.Message, opStr, e.ItemID, retryStr)
 	}
 
 	if e.Err != nil {
-		return fmt.Sprintf("processing error in %s (%s): %s: %v",
-			e.Operation, retryStr, e.Message, e.Err)
+		return fmt.Sprintf("%s: %s failed (%s): %v", e.Message, opStr, retryStr, e.Err)
 	}
-	return fmt.Sprintf("processing error in %s (%s): %s",
-		e.Operation, retryStr, e.Message)
+	return fmt.Sprintf("%s: %s failed (%s)", e.Message, opStr, retryStr)
 }
 
 func (e *ProcessingError) Unwrap() error {
