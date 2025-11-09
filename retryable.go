@@ -50,9 +50,37 @@ func IsRetryable(err error) bool {
 		return false
 	}
 
-	// Check if error implements IsRetryable interface
-	if rerr, ok := err.(Retryable); ok {
-		return rerr.IsRetryable()
+	// Check for specific error types that implement IsRetryable interface.
+	// Use errors.As() to traverse error chains (handles wrapped errors).
+
+	// Check for RetryableError
+	var retryableErr *RetryableError
+	if errors.As(err, &retryableErr) {
+		return retryableErr.IsRetryable()
+	}
+
+	// Check for RateLimitError
+	var rateLimitErr *RateLimitError
+	if errors.As(err, &rateLimitErr) {
+		return rateLimitErr.IsRetryable()
+	}
+
+	// Check for TimeoutError
+	var timeoutErr *TimeoutError
+	if errors.As(err, &timeoutErr) {
+		return timeoutErr.IsRetryable()
+	}
+
+	// Check for ProcessingError (which may wrap retryable causes)
+	var procErr *ProcessingError
+	if errors.As(err, &procErr) {
+		return procErr.IsRetryable()
+	}
+
+	// Check for NetworkError (retryable if transient)
+	var netErr *NetworkError
+	if errors.As(err, &netErr) {
+		return netErr.IsRetryable()
 	}
 
 	// Check for typed sentinel errors
