@@ -533,6 +533,12 @@ func NewInternalError(message string, cause error) error {
 	return NewHTTPError(500, message, cause)
 }
 
+// NewNotFoundError creates an HTTPError with status 404 (Not Found).
+// This is a convenience wrapper for API/backend services.
+func NewNotFoundError(message string, cause error) error {
+	return NewHTTPError(404, message, cause)
+}
+
 // Sentinel errors for common API/backend error conditions.
 var (
 	// ErrActivityNotFound indicates a requested activity was not found.
