@@ -526,3 +526,18 @@ func IsNetworkError(err error) bool {
 func IsContextError(err error) bool {
 	return errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled)
 }
+
+// NewInternalError creates an HTTPError with status 500 (Internal Server Error).
+// This is a convenience wrapper for API/backend services.
+func NewInternalError(message string, cause error) error {
+	return NewHTTPError(500, message, cause)
+}
+
+// Sentinel errors for common API/backend error conditions.
+var (
+	// ErrActivityNotFound indicates a requested activity was not found.
+	ErrActivityNotFound = errors.New("activity not found")
+
+	// ErrLocationNotFound indicates a requested location was not found.
+	ErrLocationNotFound = errors.New("location not found")
+)
