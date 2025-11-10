@@ -541,3 +541,10 @@ var (
 	// ErrLocationNotFound indicates a requested location was not found.
 	ErrLocationNotFound = errors.New("location not found")
 )
+
+// IsNotFound checks if an error represents a "not found" condition.
+// Returns true for ErrActivityNotFound, ErrLocationNotFound, or any error
+// wrapping these sentinels.
+func IsNotFound(err error) bool {
+	return errors.Is(err, ErrActivityNotFound) || errors.Is(err, ErrLocationNotFound)
+}
