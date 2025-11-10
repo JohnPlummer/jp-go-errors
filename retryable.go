@@ -17,15 +17,19 @@ type Retryable interface {
 // IsRetryable checks if an error should trigger a retry.
 // It checks in priority order:
 // 1. Context errors (DeadlineExceeded, Canceled) - NOT retryable
-// 2. Errors implementing Retryable interface
+// 2. Any error implementing Retryable interface (generic check)
 // 3. Typed sentinel errors (ErrRateLimited, ErrNetworkTimeout, etc.)
 // 4. HTTPError with retryable status codes (429, 5xx)
 // 5. Defensive fallback for untyped rate limit messages
 //
 // CRITICAL: Context errors are checked FIRST because some error types
-// (like TimeoutError) implement IsRetryable() but may wrap context errors.
-// If context.DeadlineExceeded is wrapped, retrying with the same context
-// will fail immediately - these operations should be abandoned, not retried.
+// implement IsRetryable() but may wrap context errors. If context.DeadlineExceeded
+// is wrapped, retrying with the same context will fail immediately - these
+// operations should be abandoned, not retried.
+//
+// The generic Retryable interface check (step 2) works with error types from
+// any package, not just go-errors. External packages can define their own
+// error types with IsRetryable() methods, and they will be properly detected.
 //
 // Example usage:
 //
@@ -50,37 +54,13 @@ func IsRetryable(err error) bool {
 		return false
 	}
 
-	// Check for specific error types that implement IsRetryable interface.
+	// Generic check for ANY error implementing Retryable interface.
+	// This catches both go-errors package types and external error types
+	// (e.g., deduplicator.comparisonTimeoutError) that implement IsRetryable().
 	// Use errors.As() to traverse error chains (handles wrapped errors).
-
-	// Check for RetryableError
-	var retryableErr *RetryableError
-	if errors.As(err, &retryableErr) {
-		return retryableErr.IsRetryable()
-	}
-
-	// Check for RateLimitError
-	var rateLimitErr *RateLimitError
-	if errors.As(err, &rateLimitErr) {
-		return rateLimitErr.IsRetryable()
-	}
-
-	// Check for TimeoutError
-	var timeoutErr *TimeoutError
-	if errors.As(err, &timeoutErr) {
-		return timeoutErr.IsRetryable()
-	}
-
-	// Check for ProcessingError (which may wrap retryable causes)
-	var procErr *ProcessingError
-	if errors.As(err, &procErr) {
-		return procErr.IsRetryable()
-	}
-
-	// Check for NetworkError (retryable if transient)
-	var netErr *NetworkError
-	if errors.As(err, &netErr) {
-		return netErr.IsRetryable()
+	var r Retryable
+	if errors.As(err, &r) {
+		return r.IsRetryable()
 	}
 
 	// Check for typed sentinel errors
