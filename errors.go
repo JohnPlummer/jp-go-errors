@@ -549,8 +549,19 @@ var (
 )
 
 // IsNotFound checks if an error represents a "not found" condition.
-// Returns true for ErrActivityNotFound, ErrLocationNotFound, or any error
-// wrapping these sentinels.
+// Returns true for:
+// - ErrActivityNotFound or ErrLocationNotFound sentinels
+// - Any error wrapping these sentinels
+// - HTTPError with status code 404
 func IsNotFound(err error) bool {
-	return errors.Is(err, ErrActivityNotFound) || errors.Is(err, ErrLocationNotFound)
+	if errors.Is(err, ErrActivityNotFound) || errors.Is(err, ErrLocationNotFound) {
+		return true
+	}
+
+	// Check for HTTPError with 404 status
+	if httpErr, ok := IsHTTPError(err); ok {
+		return httpErr.StatusCode == 404
+	}
+
+	return false
 }
