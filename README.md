@@ -1,4 +1,4 @@
-# go-errors
+# jp-go-errors
 
 Structured error handling package wrapping [cockroachdb/errors](https://github.com/cockroachdb/errors) with enterprise-grade error types, automatic stack traces, and intelligent retry detection.
 
@@ -15,13 +15,13 @@ Production debugging requires stack traces. Type-safe retry logic requires struc
 ## Installation
 
 ```bash
-go get github.com/JohnPlummer/go-errors
+go get github.com/JohnPlummer/jp-go-errors
 ```
 
 ## Quick Start
 
 ```go
-import "github.com/JohnPlummer/go-errors"
+import "github.com/JohnPlummer/jp-go-errors"
 
 // Create errors with automatic stack traces
 err := errors.New("database connection failed")

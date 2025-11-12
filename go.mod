@@ -1,4 +1,4 @@
-module github.com/JohnPlummer/go-errors
+module github.com/JohnPlummer/jp-go-errors
 
 go 1.23.0
 
