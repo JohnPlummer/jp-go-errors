@@ -873,8 +873,8 @@ func TestAllOptions(t *testing.T) {
 
 	t.Run("WithState", func(t *testing.T) {
 		err := NewCircuitBreakerError("error", "op", "")
-		WithState("open")(err.(*CircuitBreakerError))
-		if err.(*CircuitBreakerError).State != "open" {
+		WithState("open")(err)
+		if err.State != "open" {
 			t.Error("WithState did not set state")
 		}
 	})
