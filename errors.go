@@ -466,13 +466,15 @@ func NewNetworkError(message, operation string, opts ...Option) error {
 }
 
 // CircuitBreakerError represents circuit breaker protection.
+// Wraps sentinel errors (ErrCircuitOpen, ErrCircuitHalfOpen) for errors.Is() compatibility.
 // Automatically includes stack trace from creation point.
 type CircuitBreakerError struct {
 	Message   string
 	Operation string
 	Component string
-	State     string
-	Err       error
+	State     string        // "open", "half-open", "closed"
+	Counts    CircuitCounts // Circuit breaker statistics for observability
+	Err       error         // Additional wrapped error (optional)
 }
 
 func (e *CircuitBreakerError) Error() string {
@@ -489,8 +491,26 @@ func (e *CircuitBreakerError) Error() string {
 		e.State, opStr, e.Message)
 }
 
-func (e *CircuitBreakerError) Unwrap() error {
-	return e.Err
+// Unwrap returns both the sentinel and cause errors for errors.Is() and errors.As() compatibility.
+// Returns ErrCircuitOpen for "open" state, ErrCircuitHalfOpen for "half-open" state,
+// plus any wrapped cause error.
+func (e *CircuitBreakerError) Unwrap() []error {
+	var errs []error
+
+	// Add the appropriate sentinel based on state
+	switch e.State {
+	case "open":
+		errs = append(errs, ErrCircuitOpen)
+	case "half-open":
+		errs = append(errs, ErrCircuitHalfOpen)
+	}
+
+	// Add the wrapped cause if present
+	if e.Err != nil {
+		errs = append(errs, e.Err)
+	}
+
+	return errs
 }
 
 func (e *CircuitBreakerError) IsRetryable() bool {
@@ -499,7 +519,8 @@ func (e *CircuitBreakerError) IsRetryable() bool {
 }
 
 // NewCircuitBreakerError creates a CircuitBreakerError with automatic stack trace.
-func NewCircuitBreakerError(message, operation, state string, opts ...Option) error {
+// State should be "open", "half-open", or "closed".
+func NewCircuitBreakerError(message, operation, state string, opts ...Option) *CircuitBreakerError {
 	err := &CircuitBreakerError{
 		Message:   message,
 		Operation: operation,

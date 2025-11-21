@@ -38,6 +38,8 @@ func WithCause(cause error) Option {
 			e.Err = cause
 		case *CircuitBreakerError:
 			e.Err = cause
+		case *RetryError:
+			e.LastError = cause
 		}
 	}
 }
@@ -88,7 +90,7 @@ func WithValue(value any) Option {
 }
 
 // WithOperation sets the operation name for errors that support it.
-// Applies to TimeoutError, RateLimitError, ProcessingError, NetworkError, and CircuitBreakerError.
+// Applies to TimeoutError, RateLimitError, ProcessingError, NetworkError, CircuitBreakerError, and RetryError.
 //
 // Example:
 //
@@ -107,6 +109,8 @@ func WithOperation(operation string) Option {
 		case *NetworkError:
 			e.Operation = operation
 		case *CircuitBreakerError:
+			e.Operation = operation
+		case *RetryError:
 			e.Operation = operation
 		}
 	}
@@ -230,6 +234,23 @@ func WithComponent(component string) Option {
 			e.Component = component
 		case *CircuitBreakerError:
 			e.Component = component
+		case *RetryError:
+			e.Component = component
+		}
+	}
+}
+
+// WithCounts sets the circuit counts for a CircuitBreakerError.
+// Only applies to CircuitBreakerError types, ignored for others.
+//
+// Example:
+//
+//	err := NewCircuitBreakerError("Circuit open", "CallAPI", "open",
+//	    WithCounts(CircuitCounts{ConsecutiveFailures: 5}))
+func WithCounts(counts CircuitCounts) Option {
+	return func(err any) {
+		if e, ok := err.(*CircuitBreakerError); ok {
+			e.Counts = counts
 		}
 	}
 }
