@@ -31,8 +31,6 @@ linters-settings:
     # Exclude specific rules that are problematic in test contexts
     excludes:
       - G306  # File permissions - test files create temporary files with standard 0o644 permissions
-    # Disable gosec scanning of test files to avoid false positives on test-specific patterns
-    tests: false
 
 issues:
   # Maximum issues count per one linter
