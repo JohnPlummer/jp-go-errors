@@ -1,15 +1,12 @@
-# golangci-lint configuration for go-config
-# Based on Some Things To Do monorepo standards
+# golangci-lint v2 configuration for jp-go-errors
+version: "2"
 
 run:
-  # Timeout for analysis - prevents CI hangs while allowing thorough checking
   timeout: 5m
 
 linters:
+  default: none
   enable:
-    - gofmt
-    - gofumpt       # Stricter formatting than gofmt
-    - goimports
     - govet
     - staticcheck
     - ineffassign
@@ -17,33 +14,22 @@ linters:
     - unconvert
     - gosec
 
-  disable:
-    - exhaustive    # Reports exhaustive switch statements - too strict for this codebase
-    - exhaustruct   # Reports uninitialized struct fields - conflicts with optional fields
-    - wrapcheck     # Reports unwrapped errors - not applicable to current error handling strategy
-    - unparam       # Reports unused parameters - creates noise for interface implementations and test helpers
+  settings:
+    staticcheck:
+      checks: ["all", "-ST1000", "-ST1016"]
 
-linters-settings:
-  staticcheck:
-    checks: ["all"]
+    gosec:
+      excludes:
+        - G306
 
-  gosec:
-    # Exclude specific rules that are problematic in test contexts
-    excludes:
-      - G306  # File permissions - test files create temporary files with standard 0o644 permissions
+  exclusions:
+    paths:
+      - ".*\\.pb\\.go$"
+      - ".*_gen\\.go$"
+      - ".*_generated\\.go$"
 
-issues:
-  # Maximum issues count per one linter
-  max-issues-per-linter: 50
-
-  # Maximum count of issues with the same text
-  max-same-issues: 10
-
-  # Show only new issues for PRs
-  new: false
-
-  # Skip generated files
-  exclude-files:
-    - ".*\\.pb\\.go$"
-    - ".*_gen\\.go$"
-    - ".*_generated\\.go$"
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
