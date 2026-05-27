@@ -991,3 +991,85 @@ func TestProcessingErrorWithWrappedRetryable(t *testing.T) {
 		t.Error("ProcessingError should be retryable when wrapping retryable error")
 	}
 }
+
+func TestNewInternalError(t *testing.T) {
+	cause := fmt.Errorf("database connection failed")
+	err := NewInternalError("internal failure", cause)
+
+	httpErr, ok := IsHTTPError(err)
+	if !ok {
+		t.Fatal("NewInternalError should return an HTTPError")
+	}
+	if httpErr.StatusCode != 500 {
+		t.Errorf("expected status 500, got %d", httpErr.StatusCode)
+	}
+	if httpErr.Message != "internal failure" {
+		t.Errorf("expected message 'internal failure', got %q", httpErr.Message)
+	}
+	if !IsRetryable(err) {
+		t.Error("500 internal error should be retryable")
+	}
+}
+
+func TestNewNotFoundError(t *testing.T) {
+	err := NewNotFoundError("user missing", nil)
+
+	httpErr, ok := IsHTTPError(err)
+	if !ok {
+		t.Fatal("NewNotFoundError should return an HTTPError")
+	}
+	if httpErr.StatusCode != 404 {
+		t.Errorf("expected status 404, got %d", httpErr.StatusCode)
+	}
+	if !IsNotFound(err) {
+		t.Error("NewNotFoundError result should match IsNotFound")
+	}
+}
+
+func TestIsNotFound(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want bool
+	}{
+		{"nil error", nil, false},
+		{"unrelated error", fmt.Errorf("other"), false},
+		{"activity sentinel", ErrActivityNotFound, true},
+		{"location sentinel", ErrLocationNotFound, true},
+		{"wrapped activity", fmt.Errorf("lookup: %w", ErrActivityNotFound), true},
+		{"http 404", NewHTTPError(404, "missing", nil), true},
+		{"http 500", NewHTTPError(500, "boom", nil), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsNotFound(tt.err); got != tt.want {
+				t.Errorf("IsNotFound(%v) = %v, want %v", tt.err, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRetryableErrorType(t *testing.T) {
+	cause := fmt.Errorf("upstream timeout")
+	err := NewRetryableError("retry me", "fetch", 5*time.Second, WithCause(cause), WithComponent("api"))
+
+	re, ok := err.(*RetryableError)
+	if !ok {
+		t.Fatalf("expected *RetryableError, got %T", err)
+	}
+	if !re.IsRetryable() {
+		t.Error("RetryableError.IsRetryable should be true")
+	}
+	if re.Unwrap() == nil {
+		t.Error("RetryableError.Unwrap should return cause")
+	}
+	if msg := re.Error(); msg == "" {
+		t.Error("RetryableError.Error should return non-empty string")
+	}
+
+	// Without cause
+	bare := NewRetryableError("retry me", "fetch", time.Second)
+	if msg := bare.Error(); msg == "" {
+		t.Error("bare RetryableError.Error should return non-empty string")
+	}
+}
